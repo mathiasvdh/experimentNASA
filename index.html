@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galileo's Valexperiment</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: linear-gradient(135deg, #16213e, #0f3460);
+      padding: 12px 24px;
+      text-align: center;
+      border-bottom: 3px solid #e94560;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 28px;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      font-size: 16px;
+      color: #aac;
+      margin-top: 2px;
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ===== CONTROL PANEL ===== */
+    .controls {
+      background: #16213e;
+      padding: 16px;
+      overflow-y: auto;
+      border-right: 2px solid #0f3460;
+    }
+
+    .controls h2 {
+      font-size: 16px;
+      color: #e94560;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .section {
+      margin-bottom: 16px;
+    }
+
+    /* Object grid */
+    .object-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .object-card {
+      background: #1a1a2e;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 6px 2px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .object-card:hover {
+      border-color: #e94560;
+      background: #222244;
+    }
+
+    .object-card.selected {
+      border-color: #ff6b35;
+      background: #2a2040;
+      box-shadow: 0 0 12px rgba(255, 107, 53, 0.4);
+      transform: scale(1.05);
+    }
+
+    .object-card .emoji {
+      font-size: 28px;
+      display: block;
+      line-height: 1.2;
+    }
+
+    .object-card .name {
+      font-size: 9px;
+      color: #aaa;
+      margin-top: 2px;
+      line-height: 1.1;
+    }
+
+    /* Environment toggle */
+    .env-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .env-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      background: #1a1a2e;
+      color: #ccc;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      font-family: inherit;
+    }
+
+    .env-btn:hover { border-color: #666; }
+
+    .env-btn.active-earth {
+      border-color: #4da6ff;
+      background: linear-gradient(135deg, #1a3a5c, #2a5a8c);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(77, 166, 255, 0.3);
+    }
+
+    .env-btn.active-moon {
+      border-color: #ccc;
+      background: linear-gradient(135deg, #2a2a3a, #444);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(200, 200, 200, 0.2);
+    }
+
+    /* Height slider */
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-container input[type="range"] {
+      flex: 1;
+      accent-color: #e94560;
+      height: 6px;
+    }
+
+    .slider-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ff6b35;
+      min-width: 65px;
+      text-align: right;
+    }
+
+    /* Drop button */
+    .drop-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 24px;
+      font-weight: bold;
+      font-family: inherit;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #4CAF50, #2e7d32);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .drop-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+    }
+
+    .drop-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .drop-btn:disabled {
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .drop-btn.reset {
+      background: linear-gradient(135deg, #ff6b35, #e94560);
+      box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+    }
+
+    .drop-btn.reset:hover:not(:disabled) {
+      box-shadow: 0 6px 20px rgba(233, 69, 96, 0.6);
+    }
+
+    /* Result banner */
+    .result-banner {
+      display: none;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 16px;
+      line-height: 1.4;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .result-banner.visible {
+      display: block;
+    }
+
+    .result-banner.winner {
+      background: linear-gradient(135deg, #1a3a5c, #2a4a6c);
+      border: 2px solid #4da6ff;
+    }
+
+    .result-banner.simultaneous {
+      background: linear-gradient(135deg, #3a2a00, #5a4a10);
+      border: 2px solid #ffd700;
+    }
+
+    .result-banner .big {
+      font-size: 22px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .result-banner .insight {
+      font-style: italic;
+      color: #ffd700;
+      margin-top: 8px;
+      display: block;
+      font-size: 14px;
+    }
+
+    /* Validation message */
+    .validation-msg {
+      display: none;
+      color: #e94560;
+      font-size: 14px;
+      text-align: center;
+      padding: 6px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .validation-msg.visible { display: block; }
+
+    /* Apollo reference */
+    .apollo-ref {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      padding: 8px 0;
+      border-top: 1px solid #333;
+    }
+
+    /* ===== CANVAS CONTAINER ===== */
+    .canvas-container {
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .canvas-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .controls {
+        border-right: none;
+        border-bottom: 2px solid #0f3460;
+        max-height: 40vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Galileo's Valexperiment</h1>
+    <p>Vallen alle voorwerpen even snel? Ontdek het zelf!</p>
+  </header>
+
+  <div class="main">
+    <aside class="controls">
+
+      <div class="section">
+        <h2>Kies voorwerp 1</h2>
+        <div class="object-grid" id="grid1"></div>
+      </div>
+
+      <div class="section">
+        <h2>Kies voorwerp 2</h2>
+        <div class="object-grid" id="grid2"></div>
+      </div>
+
+      <div class="section">
+        <h2>Omgeving</h2>
+        <div class="env-buttons">
+          <button class="env-btn active-earth" id="btn-earth" data-env="earth">🌍 Aarde<br><small>(met lucht)</small></button>
+          <button class="env-btn" id="btn-moon" data-env="moon">🌙 Maan<br><small>(vacuüm)</small></button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Valhoogte</h2>
+        <div class="slider-container">
+          <input type="range" id="height-slider" min="10" max="100" value="20" step="5">
+          <span class="slider-value" id="height-label">20 meter</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="validation-msg" id="validation">Kies eerst twee voorwerpen!</div>
+        <button class="drop-btn" id="drop-btn">LAAT VALLEN!</button>
+      </div>
+
+      <div class="section">
+        <div class="result-banner" id="result"></div>
+      </div>
+
+      <div class="apollo-ref">
+        Gebaseerd op het experiment van astronaut David Scott<br>op de Maan (Apollo 15, 1971)
+      </div>
+
+    </aside>
+
+    <div class="canvas-container" id="canvas-container">
+      <canvas id="simulation"></canvas>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       GALILEO'S VALEXPERIMENT — SIMULATOR
+       Eén bestand, geen dependencies.
+       ============================================================ */
+
+    // ===== OBJECT DATA =====
+    const OBJECTS = [
+      {
+        id: 'bowlingbal', name: 'Bowlingbal', emoji: '🎳',
+        mass: 6.0, area: 0.038, cd: 0.47, color: '#1a1a2e'
+      },
+      {
+        id: 'veer', name: 'Veer', emoji: '🪶',
+        mass: 0.003, area: 0.008, cd: 1.2, color: '#f5f5dc'
+      },
+      {
+        id: 'hamer', name: 'Hamer', emoji: '🔨',
+        mass: 1.3, area: 0.005, cd: 0.8, color: '#8B4513'
+      },
+      {
+        id: 'tennisbal', name: 'Tennisbal', emoji: '🎾',
+        mass: 0.058, area: 0.0034, cd: 0.55, color: '#ccff00'
+      },
+      {
+        id: 'ballon', name: 'Ballon', emoji: '🎈',
+        mass: 0.01, area: 0.0707, cd: 0.5, color: '#ff4444'
+      },
+      {
+        id: 'basketbal', name: 'Basketbal', emoji: '🏀',
+        mass: 0.625, area: 0.0452, cd: 0.47, color: '#ff8c00'
+      },
+      {
+        id: 'appel', name: 'Appel', emoji: '🍎',
+        mass: 0.2, area: 0.005, cd: 0.47, color: '#cc0000'
+      },
+      {
+        id: 'baksteen', name: 'Baksteen', emoji: '🧱',
+        mass: 3.0, area: 0.014, cd: 1.05, color: '#b22222'
+      },
+      {
+        id: 'pingpongbal', name: 'Pingpongbal', emoji: '🏓',
+        mass: 0.0027, area: 0.00126, cd: 0.47, color: '#ffffff'
+      },
+      {
+        id: 'papiervliegtuig', name: 'Papiervliegtuig', emoji: '✈️',
+        mass: 0.005, area: 0.015, cd: 1.3, color: '#eeeeee'
+      }
+    ];
+
+    // ===== PHYSICS CONSTANTS =====
+    const EARTH_G = 9.81;
+    const MOON_G = 1.625;
+    const AIR_DENSITY = 1.225;
+    const PHYSICS_DT = 1 / 120;
+
+    // ===== STATE =====
+    let selectedObj1 = null;
+    let selectedObj2 = null;
+    let environment = 'earth';
+    let dropHeight = 20;
+    let running = false;
+    let simTime = 0;
+    let accumulator = 0;
+    let lastFrameTime = 0;
+    let animationId = null;
+
+    let state1 = { y: 0, vy: 0, landed: false, landTime: null };
+    let state2 = { y: 0, vy: 0, landed: false, landTime: null };
+
+    // Impact particles
+    let particles = [];
+
+    // Stars (for Moon background, generated once)
+    let stars = [];
+
+    // Clouds (for Earth background)
+    let clouds = [];
+
+    // ===== DOM REFERENCES =====
+    const canvas = document.getElementById('simulation');
+    const ctx = canvas.getContext('2d');
+    const canvasContainer = document.getElementById('canvas-container');
+    const grid1 = document.getElementById('grid1');
+    const grid2 = document.getElementById('grid2');
+    const btnEarth = document.getElementById('btn-earth');
+    const btnMoon = document.getElementById('btn-moon');
+    const heightSlider = document.getElementById('height-slider');
+    const heightLabel = document.getElementById('height-label');
+    const dropBtn = document.getElementById('drop-btn');
+    const resultBanner = document.getElementById('result');
+    const validation = document.getElementById('validation');
+
+    // ===== INITIALIZE =====
+    function init() {
+      buildObjectGrids();
+      generateStars();
+      generateClouds();
+      resizeCanvas();
+      render();
+
+      // Event listeners
+      btnEarth.addEventListener('click', () => setEnvironment('earth'));
+      btnMoon.addEventListener('click', () => setEnvironment('moon'));
+      heightSlider.addEventListener('input', onHeightChange);
+      dropBtn.addEventListener('click', onDropClick);
+      window.addEventListener('resize', () => { resizeCanvas(); if (!running) render(); });
+    }
+
+    // ===== BUILD OBJECT GRIDS =====
+    function buildObjectGrids() {
+      OBJECTS.forEach(obj => {
+        grid1.appendChild(createCard(obj, 1));
+        grid2.appendChild(createCard(obj, 2));
+      });
+    }
+
+    function createCard(obj, slot) {
+      const card = document.createElement('div');
+      card.className = 'object-card';
+      card.dataset.id = obj.id;
+      card.dataset.slot = slot;
+      card.innerHTML = `<span class="emoji">${obj.emoji}</span><span class="name">${obj.name}</span>`;
+      card.addEventListener('click', () => selectObject(obj, slot, card));
+      return card;
+    }
+
+    function selectObject(obj, slot, card) {
+      const grid = slot === 1 ? grid1 : grid2;
+      grid.querySelectorAll('.object-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      if (slot === 1) selectedObj1 = obj;
+      else selectedObj2 = obj;
+
+      validation.classList.remove('visible');
+
+      if (!running) {
+        resetSimulation();
+        render();
+      }
+    }
+
+    // ===== ENVIRONMENT =====
+    function setEnvironment(env) {
+      environment = env;
+      btnEarth.className = env === 'earth' ? 'env-btn active-earth' : 'env-btn';
+      btnMoon.className = env === 'moon' ? 'env-btn active-moon' : 'env-btn';
+
+      if (!running) {
+        resetSimulation();
+        render();
+      }
+    }
+
+    // ===== HEIGHT =====
+    function onHeightChange() {
+      dropHeight = parseInt(heightSlider.value);
+      heightLabel.textContent = dropHeight + ' meter';
+      if (!running) {
+        resetSimulation();
+        render();
+      }
+    }
+
+    // ===== DROP BUTTON =====
+    function onDropClick() {
+      if (running) {
+        // Reset
+        stopSimulation();
+        resetSimulation();
+        dropBtn.textContent = 'LAAT VALLEN!';
+        dropBtn.classList.remove('reset');
+        render();
+        return;
+      }
+
+      if (!selectedObj1 || !selectedObj2) {
+        validation.classList.add('visible');
+        return;
+      }
+
+      validation.classList.remove('visible');
+      resultBanner.className = 'result-banner';
+      resultBanner.style.display = 'none';
+      resetSimulation();
+      startSimulation();
+    }
+
+    // ===== SIMULATION =====
+    function resetSimulation() {
+      state1 = { y: 0, vy: 0, landed: false, landTime: null };
+      state2 = { y: 0, vy: 0, landed: false, landTime: null };
+      simTime = 0;
+      accumulator = 0;
+      particles = [];
+    }
+
+    function startSimulation() {
+      running = true;
+      dropBtn.textContent = 'STOP';
+      dropBtn.classList.add('reset');
+      lastFrameTime = performance.now();
+      accumulator = 0;
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function stopSimulation() {
+      running = false;
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    }
+
+    function physicsStep(obj, state, dt) {
+      if (state.landed) return;
+
+      const g = environment === 'moon' ? MOON_G : EARTH_G;
+      const rho = environment === 'moon' ? 0 : AIR_DENSITY;
+
+      const F_gravity = obj.mass * g;
+      const speed = Math.abs(state.vy);
+      const F_drag = 0.5 * rho * speed * speed * obj.cd * obj.area;
+      const F_net = F_gravity - F_drag;
+      const a = F_net / obj.mass;
+
+      state.vy += a * dt;
+      state.y += state.vy * dt;
+
+      if (state.y >= dropHeight) {
+        state.y = dropHeight;
+        state.vy = 0;
+        state.landed = true;
+        state.landTime = simTime;
+        spawnImpactParticles(state === state1 ? 1 : 2);
+      }
+    }
+
+    function gameLoop(timestamp) {
+      if (!running) return;
+
+      const frameTime = Math.min((timestamp - lastFrameTime) / 1000, 0.05);
+      lastFrameTime = timestamp;
+      accumulator += frameTime;
+
+      while (accumulator >= PHYSICS_DT) {
+        simTime += PHYSICS_DT;
+        if (selectedObj1) physicsStep(selectedObj1, state1, PHYSICS_DT);
+        if (selectedObj2) physicsStep(selectedObj2, state2, PHYSICS_DT);
+        accumulator -= PHYSICS_DT;
+      }
+
+      updateParticles(frameTime);
+      render();
+
+      if (state1.landed && state2.landed) {
+        running = false;
+        dropBtn.textContent = 'OPNIEUW';
+        dropBtn.classList.add('reset');
+        showResult();
+        return;
+      }
+
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    // ===== IMPACT PARTICLES =====
+    function spawnImpactParticles(lane) {
+      const cx = lane === 1 ? canvas.width * 0.35 : canvas.width * 0.65;
+      const groundY = getGroundY();
+      const isEarth = environment === 'earth';
+
+      for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 * i) / 12 + (Math.random() - 0.5) * 0.3;
+        const speed = 60 + Math.random() * 100;
+        particles.push({
+          x: cx,
+          y: groundY,
+          vx: Math.cos(angle) * speed,
+          vy: -Math.abs(Math.sin(angle)) * speed,
+          life: 1.0,
+          decay: 1.5 + Math.random() * 1.0,
+          size: 3 + Math.random() * 4,
+          color: isEarth ? `hsl(30, ${40 + Math.random() * 30}%, ${40 + Math.random() * 30}%)` : `hsl(0, 0%, ${60 + Math.random() * 30}%)`
+        });
+      }
+    }
+
+    function updateParticles(dt) {
+      const g = environment === 'moon' ? MOON_G * 5 : EARTH_G * 5;
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.vy += g * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= p.decay * dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    // ===== GENERATE BACKGROUNDS =====
+    function generateStars() {
+      stars = [];
+      for (let i = 0; i < 80; i++) {
+        stars.push({
+          x: Math.random(),
+          y: Math.random() * 0.85,
+          size: 0.5 + Math.random() * 2,
+          brightness: 0.4 + Math.random() * 0.6
+        });
+      }
+    }
+
+    function generateClouds() {
+      clouds = [];
+      for (let i = 0; i < 4; i++) {
+        clouds.push({
+          x: 0.1 + Math.random() * 0.8,
+          y: 0.05 + Math.random() * 0.25,
+          w: 0.08 + Math.random() * 0.12,
+          h: 0.02 + Math.random() * 0.03
+        });
+      }
+    }
+
+    // ===== CANVAS RESIZE =====
+    function resizeCanvas() {
+      canvas.width = canvasContainer.clientWidth;
+      canvas.height = canvasContainer.clientHeight;
+    }
+
+    // ===== COORDINATE HELPERS =====
+    function getTopY() { return 80; }
+    function getGroundY() { return canvas.height - 50; }
+    function getAvailableHeight() { return getGroundY() - getTopY(); }
+
+    function yToCanvas(simY) {
+      return getTopY() + (simY / dropHeight) * getAvailableHeight();
+    }
+
+    // ===== RENDER =====
+    function render() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const groundY = getGroundY();
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Background
+      if (environment === 'earth') {
+        drawEarthBackground(w, h, groundY);
+      } else {
+        drawMoonBackground(w, h, groundY);
+      }
+
+      // Ground
+      drawGround(w, h, groundY);
+
+      // Lane guides
+      drawLaneGuides(w, groundY);
+
+      // Objects
+      if (selectedObj1) drawObject(selectedObj1, state1, w * 0.35, groundY);
+      if (selectedObj2) drawObject(selectedObj2, state2, w * 0.65, groundY);
+
+      // Particles
+      drawParticles();
+
+      // HUD
+      drawHUD(w);
+    }
+
+    function drawEarthBackground(w, h, groundY) {
+      const grad = ctx.createLinearGradient(0, 0, 0, groundY);
+      grad.addColorStop(0, '#4a90d9');
+      grad.addColorStop(0.6, '#87CEEB');
+      grad.addColorStop(1, '#b8dff5');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, groundY);
+
+      // Clouds
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      clouds.forEach(c => {
+        const cx = c.x * w, cy = c.y * groundY;
+        const cw = c.w * w, ch = c.h * groundY;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, cw, ch, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx - cw * 0.5, cy + ch * 0.3, cw * 0.6, ch * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx + cw * 0.5, cy + ch * 0.2, cw * 0.7, ch * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawMoonBackground(w, h, groundY) {
+      ctx.fillStyle = '#0a0a15';
+      ctx.fillRect(0, 0, w, groundY);
+
+      // Stars
+      stars.forEach(s => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${s.brightness})`;
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * groundY, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Earth in corner
+      const ex = w - 60, ey = 50, er = 20;
+      const earthGrad = ctx.createRadialGradient(ex - 5, ey - 5, 2, ex, ey, er);
+      earthGrad.addColorStop(0, '#4da6ff');
+      earthGrad.addColorStop(0.5, '#2d7ad6');
+      earthGrad.addColorStop(1, '#1a4a7a');
+      ctx.fillStyle = earthGrad;
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fill();
+      // Continents hint
+      ctx.fillStyle = 'rgba(80, 180, 80, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(ex - 5, ey - 3, 8, 6, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawGround(w, h, groundY) {
+      if (environment === 'earth') {
+        const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
+        groundGrad.addColorStop(0, '#5a8a3c');
+        groundGrad.addColorStop(0.3, '#6b5b3a');
+        groundGrad.addColorStop(1, '#4a3a2a');
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, groundY, w, h - groundY);
+        // Ground line
+        ctx.strokeStyle = '#3a6a2a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(w, groundY);
+        ctx.stroke();
+      } else {
+        const moonGrad = ctx.createLinearGradient(0, groundY, 0, h);
+        moonGrad.addColorStop(0, '#888');
+        moonGrad.addColorStop(0.5, '#666');
+        moonGrad.addColorStop(1, '#444');
+        ctx.fillStyle = moonGrad;
+        ctx.fillRect(0, groundY, w, h - groundY);
+        // Craters
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.beginPath(); ctx.arc(w * 0.2, groundY + 20, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(w * 0.5, groundY + 30, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(w * 0.8, groundY + 15, 8, 0, Math.PI * 2); ctx.fill();
+        // Ground line
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(w, groundY);
+        ctx.stroke();
+      }
+    }
+
+    function drawLaneGuides(w, groundY) {
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.35, getTopY());
+      ctx.lineTo(w * 0.35, groundY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(w * 0.65, getTopY());
+      ctx.lineTo(w * 0.65, groundY);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+    }
+
+    function drawObject(obj, state, cx, groundY) {
+      const objY = yToCanvas(state.y);
+
+      // Shadow on ground
+      if (!state.landed) {
+        const progress = state.y / dropHeight;
+        const shadowAlpha = 0.1 + progress * 0.3;
+        const shadowSize = 20 - progress * 10;
+        ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(cx, groundY + 2, shadowSize, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Impact flash
+      if (state.landed && state.landTime && (simTime - state.landTime) < 0.3) {
+        const flash = 1 - (simTime - state.landTime) / 0.3;
+        ctx.fillStyle = `rgba(255, 255, 200, ${flash * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(cx, groundY, 30 + (1 - flash) * 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Emoji
+      const emojiSize = Math.min(60, canvas.width * 0.08);
+      ctx.font = `${emojiSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Subtle shadow behind emoji
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.fillText(obj.emoji, cx, objY);
+      ctx.restore();
+
+      // Object label at top
+      ctx.font = `bold ${Math.min(16, canvas.width * 0.025)}px sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText(obj.name, cx, getTopY() - 15);
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function drawHUD(w) {
+      // Timer
+      ctx.font = `bold ${Math.min(28, w * 0.04)}px 'Courier New', monospace`;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(`Tijd: ${simTime.toFixed(2)}s`, 15, 35);
+      ctx.shadowBlur = 0;
+
+      // Environment label
+      ctx.textAlign = 'right';
+      ctx.font = `bold ${Math.min(24, w * 0.035)}px sans-serif`;
+      if (environment === 'earth') {
+        ctx.fillStyle = '#fff';
+        ctx.fillText('🌍 AARDE', w - 15, 35);
+      } else {
+        ctx.fillStyle = '#ddd';
+        ctx.fillText('🌙 MAAN', w - 15, 35);
+      }
+      ctx.textAlign = 'left';
+
+      // Height label
+      ctx.font = `${Math.min(14, w * 0.02)}px sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${dropHeight}m`, w * 0.08, (getTopY() + getGroundY()) / 2);
+      ctx.textAlign = 'left';
+    }
+
+    // ===== RESULT DISPLAY =====
+    function showResult() {
+      const diff = Math.abs(state1.landTime - state2.landTime);
+
+      if (diff < 0.01) {
+        resultBanner.className = 'result-banner visible simultaneous';
+        let html = `<span class="big">🎉 Tegelijk!</span>Beide voorwerpen raakten tegelijk de grond!`;
+        if (environment === 'moon') {
+          html += `<span class="insight">In een vacuüm vallen alle voorwerpen even snel, ongeacht hun gewicht!</span>`;
+        }
+        resultBanner.innerHTML = html;
+      } else {
+        const winner = state1.landTime < state2.landTime ? selectedObj1 : selectedObj2;
+        const loser = state1.landTime < state2.landTime ? selectedObj2 : selectedObj1;
+        const winTime = Math.min(state1.landTime, state2.landTime);
+        const loseTime = Math.max(state1.landTime, state2.landTime);
+        resultBanner.className = 'result-banner visible winner';
+        resultBanner.innerHTML = `<span class="big">${winner.emoji} ${winner.name} was EERST!</span>${loser.emoji} ${loser.name} kwam ${(loseTime - winTime).toFixed(2)}s later aan.`;
+      }
+    }
+
+    // ===== START =====
+    init();
+  </script>
+</body>
+</html>
