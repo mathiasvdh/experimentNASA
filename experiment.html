@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NASA Veer & Hamer Experiment</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: linear-gradient(135deg, #16213e, #0f3460);
+    padding: 10px 24px;
+    text-align: center;
+    border-bottom: 3px solid #e94560;
+    flex-shrink: 0;
+  }
+
+  header h1 { font-size: 24px; color: #fff; }
+  header p { font-size: 14px; color: #aac; margin-top: 2px; }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Canvas ── */
+  .canvas-container {
+    position: relative;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .canvas-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    background: #16213e;
+    padding: 14px 16px;
+    overflow-y: auto;
+    border-left: 2px solid #0f3460;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .controls h2 {
+    font-size: 13px;
+    color: #e94560;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .section { display: flex; flex-direction: column; gap: 4px; }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .control-row label {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .control-row label span { color: #8b949e; font-weight: 400; }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: #e94560;
+    height: 6px;
+    cursor: pointer;
+  }
+
+  /* Gravity buttons */
+  .grav-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+
+  .grav-btn {
+    padding: 8px 4px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #ccc;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    font-family: inherit;
+    line-height: 1.2;
+  }
+
+  .grav-btn:hover { border-color: #666; }
+  .grav-btn.active { border-color: #e94560; background: #2a1a30; color: #fff; box-shadow: 0 0 10px rgba(233,69,96,0.3); }
+
+  /* Air toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toggle {
+    width: 50px;
+    height: 26px;
+    background: #30363d;
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle.on { background: #58a6ff; }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+
+  .toggle.on::after { left: 27px; }
+
+  .lucht-status {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 14px;
+    font-size: 18px;
+    font-weight: bold;
+    font-family: inherit;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-start {
+    background: linear-gradient(135deg, #4CAF50, #2e7d32);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(76,175,80,0.4);
+  }
+
+  .btn-start:hover:not(:disabled) { transform: translateY(-2px); }
+  .btn-start:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none; }
+
+  .btn-reset {
+    background: linear-gradient(135deg, #ff6b35, #e94560);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(233,69,96,0.4);
+  }
+
+  .btn-reset:hover { transform: translateY(-2px); }
+
+  .apollo-ref {
+    font-size: 10px;
+    color: #555;
+    text-align: center;
+    padding-top: 6px;
+    border-top: 1px solid #333;
+    margin-top: auto;
+  }
+
+  /* Responsive */
+  @media (max-width: 800px) {
+    .main {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+    }
+    .controls {
+      border-left: none;
+      border-top: 2px solid #0f3460;
+      max-height: 45vh;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .controls .section { min-width: 140px; flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🪶 NASA Veer & Hamer Experiment</h1>
+  <p>Ontdek waarom een veer en hamer op de maan even snel vallen!</p>
+</header>
+
+<div class="main">
+  <div class="canvas-container" id="canvas-container">
+    <canvas id="sim"></canvas>
+  </div>
+
+  <aside class="controls">
+    <div class="section">
+      <h2>🪶 Veer</h2>
+      <div class="control-row">
+        <label>Grootte <span id="veerGrootteVal">normaal</span></label>
+        <input type="range" id="veerGrootte" min="0" max="8" value="4" step="1">
+      </div>
+      <div class="control-row">
+        <label>Gewicht <span id="veerGewichtVal">vederlicht</span></label>
+        <input type="range" id="veerGewicht" min="0" max="100" value="0">
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔨 Hamer</h2>
+      <div class="control-row">
+        <label>Gewicht <span id="hamerGewichtVal">normaal</span></label>
+        <input type="range" id="hamerGewicht" min="0" max="100" value="50">
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🌍 Zwaartekracht</h2>
+      <div class="grav-grid" id="gravGrid"></div>
+    </div>
+
+    <div class="section">
+      <h2>💨 Lucht</h2>
+      <div class="toggle-row">
+        <div class="toggle on" id="luchtToggle"></div>
+        <span class="lucht-status" id="luchtLabel">AAN — luchtdeeltjes aanwezig</span>
+      </div>
+    </div>
+
+    <div class="btn-row" id="btnRow">
+      <button class="btn btn-start" id="startBtn">▶ Start</button>
+    </div>
+
+    <div class="apollo-ref">
+      Gebaseerd op het experiment van astronaut David Scott<br>op de maan (Apollo 15, 1971)
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ================================================================
+   NASA VEER & HAMER EXPERIMENT
+   Eén bestand, geen dependencies.
+   ================================================================ */
+
+// ── CANVAS ──
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvas-container');
+
+let W, H;
+function resize() {
+  W = canvas.width = container.clientWidth;
+  H = canvas.height = container.clientHeight;
+}
+resize();
+window.addEventListener('resize', () => { resize(); if (!sim.running) draw(); });
+
+// ── CONSTANTS ──
+const SIZE_STEPS = [0.2, 0.25, 0.33, 0.5, 1, 2, 3, 4, 5];
+const SIZE_LABELS = ['5× kleiner','4× kleiner','3× kleiner','2× kleiner','normaal',
+                     '2× groter','3× groter','4× groter','5× groter'];
+
+const GRAV_LEVELS = [
+  { id: 'geen',  label: '🚫', sub: 'Geen', g: 0 },
+  { id: 'maan',  label: '🌙', sub: 'Maan', g: 5 },
+  { id: 'aarde', label: '🌍', sub: 'Aarde', g: 30 },
+  { id: 'zwaar', label: '💫', sub: 'Jupiter', g: 75 }
+];
+
+// Physics: drag_deceleration = AIR_K * area * v² / mass
+const AIR_K = 0.00025;
+
+// Base object properties (mass in arbitrary units, area in arbitrary units)
+const VEER_BASE_MASS = 0.008;
+const VEER_BASE_AREA = 1.0;
+const HAMER_BASE_MASS = 2.0;
+const HAMER_BASE_AREA = 0.12;
+
+// ── STATE ──
+const settings = {
+  veerGrootte: 4,
+  veerGewicht: 0,
+  hamerGewicht: 50,
+  gravity: 'aarde',
+  lucht: true
+};
+
+const sim = {
+  running: false,
+  handOpen: false,
+  veer: { y: 0, vy: 0, landed: false },
+  hamer: { y: 0, vy: 0, landed: false },
+  time: 0
+};
+
+// ── COMPUTED ──
+function getHamerMass() {
+  return HAMER_BASE_MASS * (0.5 + 1.5 * (settings.hamerGewicht / 100));
+}
+
+function getVeerMass() {
+  const hMass = getHamerMass();
+  const t = settings.veerGewicht / 100;
+  if (t <= 0.5) {
+    return VEER_BASE_MASS + (t / 0.5) * (hMass - VEER_BASE_MASS);
+  }
+  return hMass + ((t - 0.5) / 0.5) * hMass;
+}
+
+function getVeerArea() {
+  return VEER_BASE_AREA * SIZE_STEPS[settings.veerGrootte];
+}
+
+function getGravity() {
+  return GRAV_LEVELS.find(g => g.id === settings.gravity).g;
+}
+
+// ── LAYOUT ──
+function handY() { return 70; }
+function groundY() { return H - 45; }
+function fallDist() { return groundY() - handY() - 30; }
+function veerX() { return W * 0.38; }
+function hamerX() { return W * 0.62; }
+
+// ── PHYSICS ──
+function updateObject(obj, g, mass, area, lucht, dt) {
+  if (obj.landed) return;
+  let acc = g;
+  if (lucht && obj.vy > 0) {
+    acc = Math.max(0, g - AIR_K * area * obj.vy * obj.vy / mass);
+  }
+  obj.vy += acc * dt;
+  obj.y += obj.vy * dt;
+  if (obj.y >= fallDist()) {
+    obj.y = fallDist();
+    obj.vy = 0;
+    obj.landed = true;
+  }
+}
+
+// ── AIR PARTICLES ──
+let airParts = [];
+
+function initAirParticles() {
+  airParts = [];
+  for (let i = 0; i < 50; i++) {
+    airParts.push({
+      x: Math.random() * W,
+      y: handY() + 30 + Math.random() * (fallDist() - 10),
+      vx: (Math.random() - 0.5) * 10,
+      vy: (Math.random() - 0.5) * 4,
+      r: 1 + Math.random() * 2,
+      a: 0.1 + Math.random() * 0.2
+    });
+  }
+}
+
+function updateAirParticles(dt) {
+  const hy = handY() + 30;
+  const gy = groundY() - 10;
+  airParts.forEach(p => {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    if (p.x < 0) p.x += W;
+    if (p.x > W) p.x -= W;
+    if (p.y < hy || p.y > gy) {
+      p.y = hy + Math.random() * (gy - hy);
+      p.x = Math.random() * W;
+    }
+  });
+}
+
+// ── STARS ──
+let stars = [];
+function initStars() {
+  stars = [];
+  for (let i = 0; i < 80; i++) {
+    stars.push({
+      rx: Math.random(), ry: Math.random() * 0.85,
+      r: 0.5 + Math.random() * 1.5,
+      a: 0.3 + Math.random() * 0.7
+    });
+  }
+}
+
+// ── IMPACT PARTICLES ──
+let impacts = [];
+
+function spawnImpact(x) {
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.PI + (Math.random() - 0.5) * Math.PI;
+    const spd = 40 + Math.random() * 80;
+    impacts.push({
+      x, y: groundY(),
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      life: 1, decay: 1.5 + Math.random(),
+      r: 2 + Math.random() * 3
+    });
+  }
+}
+
+function updateImpacts(dt) {
+  for (let i = impacts.length - 1; i >= 0; i--) {
+    const p = impacts[i];
+    p.vy += 120 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= p.decay * dt;
+    if (p.life <= 0) impacts.splice(i, 1);
+  }
+}
+
+// ── DRAWING ──
+
+function drawBackground() {
+  const gy = groundY();
+  const gId = settings.gravity;
+  let skyTop, skyBot, gndTop, gndBot;
+
+  if (gId === 'geen') {
+    skyTop = '#000008'; skyBot = '#080820'; gndTop = '#1a1a2e'; gndBot = '#101020';
+  } else if (gId === 'maan') {
+    skyTop = '#000010'; skyBot = '#0a1025'; gndTop = '#777'; gndBot = '#444';
+  } else if (gId === 'aarde') {
+    skyTop = '#2a6ab5'; skyBot = '#87CEEB'; gndTop = '#5a8a3c'; gndBot = '#4a3a2a';
+  } else {
+    skyTop = '#2a1510'; skyBot = '#6a3525'; gndTop = '#5a3a30'; gndBot = '#2a1a15';
+  }
+
+  // Sky
+  const grad = ctx.createLinearGradient(0, 0, 0, gy);
+  grad.addColorStop(0, skyTop);
+  grad.addColorStop(1, skyBot);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, gy);
+
+  // Stars for space/moon/zero-g
+  if (gId === 'geen' || gId === 'maan' || gId === 'zwaar') {
+    stars.forEach(s => {
+      ctx.fillStyle = `rgba(255,255,255,${s.a * (gId === 'zwaar' ? 0.4 : 1)})`;
+      ctx.beginPath();
+      ctx.arc(s.rx * W, s.ry * gy, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Earth in moon sky
+  if (gId === 'maan') {
+    const ex = W - 55, ey = 45, er = 18;
+    const eg = ctx.createRadialGradient(ex - 3, ey - 3, 2, ex, ey, er);
+    eg.addColorStop(0, '#4da6ff');
+    eg.addColorStop(1, '#1a4a7a');
+    ctx.fillStyle = eg;
+    ctx.beginPath();
+    ctx.arc(ex, ey, er, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(80,180,80,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(ex - 4, ey - 2, 7, 5, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Clouds on Earth
+  if (gId === 'aarde') {
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    [[0.15, 0.12], [0.55, 0.08], [0.8, 0.18]].forEach(([cx, cy]) => {
+      const x = cx * W, y = cy * gy;
+      ctx.beginPath();
+      ctx.ellipse(x, y, W * 0.06, gy * 0.025, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(x + W * 0.03, y - gy * 0.01, W * 0.04, gy * 0.02, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Ground
+  const gGrad = ctx.createLinearGradient(0, gy, 0, H);
+  gGrad.addColorStop(0, gndTop);
+  gGrad.addColorStop(1, gndBot);
+  ctx.fillStyle = gGrad;
+  ctx.fillRect(0, gy, W, H - gy);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, gy);
+  ctx.lineTo(W, gy);
+  ctx.stroke();
+
+  // Moon craters
+  if (gId === 'maan') {
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    [[0.2, 15, 10], [0.5, 25, 14], [0.75, 12, 7]].forEach(([rx, ry, r]) => {
+      ctx.beginPath();
+      ctx.arc(rx * W, gy + ry, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+}
+
+function drawAirParticlesVisual() {
+  if (!settings.lucht) return;
+  airParts.forEach(p => {
+    ctx.fillStyle = `rgba(180,210,255,${p.a})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ── Drag streaks near falling objects ──
+function drawDragStreaks(x, objY, area, vy) {
+  if (!settings.lucht || vy < 5) return;
+  const intensity = Math.min(1, vy / 80);
+  const spread = Math.min(40, 10 + area * 8);
+  ctx.strokeStyle = `rgba(180,210,255,${0.15 * intensity})`;
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const dx = (Math.random() - 0.5) * spread * 2;
+    const sy = objY - 5 - Math.random() * 15;
+    ctx.beginPath();
+    ctx.moveTo(x + dx, sy);
+    ctx.lineTo(x + dx + (Math.random() - 0.5) * 4, sy - 8 - Math.random() * 12 * intensity);
+    ctx.stroke();
+  }
+}
+
+// ── HAND ──
+function drawHand() {
+  const cx = W / 2;
+  const hy = handY();
+  const open = sim.handOpen;
+
+  ctx.fillStyle = '#f0c090';
+  ctx.strokeStyle = '#c09060';
+  ctx.lineWidth = 2;
+
+  // Arm
+  const armW = 30, armH = 25;
+  ctx.fillRect(cx - armW / 2, hy - 50, armW, armH + 10);
+  ctx.strokeRect(cx - armW / 2, hy - 50, armW, armH + 10);
+
+  // Palm
+  const pw = Math.min(160, W * 0.22), ph = 22;
+  roundRect(cx - pw / 2, hy - ph, pw, ph, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  if (!open) {
+    // Fingers gripping down — left group (feather) and right group (hammer)
+    const fingerW = 9, fingerH = 16, fingerR = 4;
+    const vx = veerX(), hx = hamerX();
+    [vx - 14, vx, vx + 14, hx - 14, hx, hx + 14].forEach(fx => {
+      ctx.fillStyle = '#f0c090';
+      roundRect(fx - fingerW / 2, hy, fingerW, fingerH, fingerR);
+      ctx.fill();
+      ctx.strokeStyle = '#c09060';
+      ctx.stroke();
+    });
+  } else {
+    // Fingers curled up
+    const fingerW = 9, fingerH = 14, fingerR = 4;
+    for (let i = 0; i < 6; i++) {
+      const fx = cx - pw / 2 + 12 + i * ((pw - 24) / 5);
+      ctx.fillStyle = '#f0c090';
+      roundRect(fx - fingerW / 2, hy - ph - fingerH + 4, fingerW, fingerH, fingerR);
+      ctx.fill();
+      ctx.strokeStyle = '#c09060';
+      ctx.stroke();
+    }
+  }
+}
+
+// ── FEATHER ──
+function drawFeather(x, y, sizeScale) {
+  const s = 0.5 + sizeScale * 0.4;
+  // Clamp visual scale so it doesn't get absurdly large
+  const vs = Math.min(s, 2.5);
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(vs, vs);
+
+  // Weight-based tint: heavier = more golden/metallic
+  const wt = settings.veerGewicht / 100;
+  const r = Math.round(230 + wt * 25);
+  const g = Math.round(225 - wt * 60);
+  const b = Math.round(210 - wt * 120);
+  const baseColor = `rgb(${r},${g},${b})`;
+  const darkColor = `rgb(${Math.round(r*0.7)},${Math.round(g*0.7)},${Math.round(b*0.7)})`;
+
+  // Shaft
+  ctx.strokeStyle = '#654321';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -30);
+  ctx.lineTo(0, 30);
+  ctx.stroke();
+
+  // Left vane
+  ctx.fillStyle = baseColor;
+  ctx.beginPath();
+  ctx.moveTo(0, -30);
+  ctx.quadraticCurveTo(-20, -12, -16, 12);
+  ctx.quadraticCurveTo(-9, 24, 0, 30);
+  ctx.fill();
+  ctx.strokeStyle = darkColor;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  // Right vane
+  ctx.fillStyle = `rgb(${Math.min(255,r+10)},${Math.min(255,g+10)},${Math.min(255,b+5)})`;
+  ctx.beginPath();
+  ctx.moveTo(0, -30);
+  ctx.quadraticCurveTo(16, -10, 13, 14);
+  ctx.quadraticCurveTo(8, 25, 0, 30);
+  ctx.fill();
+  ctx.strokeStyle = darkColor;
+  ctx.stroke();
+
+  // Barb lines
+  ctx.strokeStyle = `rgba(100,67,33,0.25)`;
+  ctx.lineWidth = 0.6;
+  for (let i = 1; i <= 6; i++) {
+    const t = i / 7;
+    const by = -30 + t * 60;
+    const spread = 1 - Math.abs(t - 0.45) * 1.8;
+    const lw = Math.max(0, 16 * spread);
+    const rw = Math.max(0, 13 * spread);
+    ctx.beginPath();
+    ctx.moveTo(-lw, by);
+    ctx.lineTo(0, by);
+    ctx.lineTo(rw, by);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ── HAMMER ──
+function drawHammer(x, y) {
+  const wt = settings.hamerGewicht / 100;
+  const ws = 0.8 + wt * 0.4;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(ws, ws);
+
+  // Handle
+  ctx.fillStyle = '#a0722a';
+  ctx.strokeStyle = '#7a5218';
+  ctx.lineWidth = 2;
+  roundRect(-5, -2, 10, 45, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  // Handle wrap lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 3; i++) {
+    const wy = 18 + i * 10;
+    ctx.beginPath();
+    ctx.moveTo(-5, wy);
+    ctx.lineTo(5, wy + 4);
+    ctx.stroke();
+  }
+
+  // Head
+  ctx.fillStyle = '#8a8a8a';
+  roundRect(-26, -24, 52, 26, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#5a5a5a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Head shine
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  roundRect(-22, -21, 44, 9, 4);
+  ctx.fill();
+
+  // Head darker bottom edge
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
+  roundRect(-22, -5, 44, 5, 3);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── IMPACT DRAWING ──
+function drawImpacts() {
+  impacts.forEach(p => {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = settings.gravity === 'aarde' ? '#a08050' : '#999';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ── LABELS ──
+function drawLabels() {
+  ctx.font = `bold ${Math.min(15, W * 0.022)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText('Veer', veerX(), H - 14);
+  ctx.fillText('Hamer', hamerX(), H - 14);
+}
+
+// ── GRAVITY LABEL ON CANVAS ──
+function drawGravLabel() {
+  const gl = GRAV_LEVELS.find(g => g.id === settings.gravity);
+  ctx.font = `bold ${Math.min(20, W * 0.03)}px sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 4;
+  ctx.fillText(`${gl.label} ${gl.sub}`, W - 14, 30);
+
+  // Air status
+  ctx.font = `${Math.min(14, W * 0.02)}px sans-serif`;
+  ctx.fillStyle = settings.lucht ? 'rgba(140,200,255,0.7)' : 'rgba(255,100,100,0.7)';
+  ctx.fillText(settings.lucht ? '💨 Lucht aan' : '🚫 Vacuüm', W - 14, 50);
+
+  ctx.shadowBlur = 0;
+  ctx.textAlign = 'left';
+}
+
+// ── MESSAGE WHEN DONE ──
+function drawDoneMessage() {
+  if (!sim.veer.landed || !sim.hamer.landed) return;
+
+  ctx.save();
+  ctx.font = `bold ${Math.min(16, W * 0.025)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('Druk op Reset om opnieuw te proberen', W / 2, handY() + fallDist() / 2);
+  ctx.restore();
+}
+
+// ── MAIN DRAW ──
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
+  drawAirParticlesVisual();
+  drawHand();
+
+  const startY = handY() + 18;
+
+  // Draw drag streaks
+  if (sim.running) {
+    drawDragStreaks(veerX(), startY + sim.veer.y, getVeerArea(), sim.veer.vy);
+    drawDragStreaks(hamerX(), startY + sim.hamer.y, HAMER_BASE_AREA, sim.hamer.vy);
+  }
+
+  drawFeather(veerX(), startY + sim.veer.y, SIZE_STEPS[settings.veerGrootte]);
+  drawHammer(hamerX(), startY + sim.hamer.y);
+
+  drawImpacts();
+  drawLabels();
+  drawGravLabel();
+
+  if (!sim.running && (sim.veer.landed || sim.hamer.landed)) {
+    drawDoneMessage();
+  }
+}
+
+// ── ANIMATION LOOP ──
+let lastTime = 0;
+let prevVeerLanded = false;
+let prevHamerLanded = false;
+
+function animate(ts) {
+  if (!lastTime) lastTime = ts;
+  const dt = Math.min((ts - lastTime) / 1000, 0.033);
+  lastTime = ts;
+
+  if (sim.running) {
+    const g = getGravity();
+
+    updateObject(sim.veer, g, getVeerMass(), getVeerArea(), settings.lucht, dt);
+    updateObject(sim.hamer, g, getHamerMass(), HAMER_BASE_AREA, settings.lucht, dt);
+
+    // Spawn impacts on landing
+    if (sim.veer.landed && !prevVeerLanded) spawnImpact(veerX());
+    if (sim.hamer.landed && !prevHamerLanded) spawnImpact(hamerX());
+    prevVeerLanded = sim.veer.landed;
+    prevHamerLanded = sim.hamer.landed;
+
+    if (settings.lucht) updateAirParticles(dt);
+    updateImpacts(dt);
+
+    if (sim.veer.landed && sim.hamer.landed) {
+      sim.running = false;
+      showResetBtn();
+    }
+  } else {
+    // Still update impacts for animation
+    if (impacts.length > 0) updateImpacts(dt);
+  }
+
+  draw();
+  requestAnimationFrame(animate);
+}
+
+// ── CONTROLS ──
+
+// Gravity buttons
+const gravGrid = document.getElementById('gravGrid');
+GRAV_LEVELS.forEach(level => {
+  const btn = document.createElement('button');
+  btn.className = 'grav-btn' + (level.id === settings.gravity ? ' active' : '');
+  btn.dataset.id = level.id;
+  btn.innerHTML = `${level.label}<br><small>${level.sub}</small>`;
+  btn.onclick = () => {
+    if (sim.running) return;
+    settings.gravity = level.id;
+    gravGrid.querySelectorAll('.grav-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.id === level.id));
+  };
+  gravGrid.appendChild(btn);
+});
+
+// Veer grootte
+const vgSlider = document.getElementById('veerGrootte');
+const vgLabel = document.getElementById('veerGrootteVal');
+vgSlider.oninput = () => {
+  if (sim.running) return;
+  settings.veerGrootte = parseInt(vgSlider.value);
+  vgLabel.textContent = SIZE_LABELS[settings.veerGrootte];
+};
+
+// Veer gewicht
+const vwSlider = document.getElementById('veerGewicht');
+const vwLabel = document.getElementById('veerGewichtVal');
+vwSlider.oninput = () => {
+  if (sim.running) return;
+  settings.veerGewicht = parseInt(vwSlider.value);
+  const v = settings.veerGewicht;
+  if (v < 5) vwLabel.textContent = 'vederlicht';
+  else if (v < 25) vwLabel.textContent = 'licht';
+  else if (v < 45) vwLabel.textContent = 'halfzwaar';
+  else if (v < 55) vwLabel.textContent = '≈ hamermassa';
+  else if (v < 80) vwLabel.textContent = 'zwaarder dan hamer';
+  else vwLabel.textContent = '2× hamer';
+};
+
+// Hamer gewicht
+const hwSlider = document.getElementById('hamerGewicht');
+const hwLabel = document.getElementById('hamerGewichtVal');
+hwSlider.oninput = () => {
+  if (sim.running) return;
+  settings.hamerGewicht = parseInt(hwSlider.value);
+  const v = settings.hamerGewicht;
+  if (v < 20) hwLabel.textContent = 'licht';
+  else if (v < 65) hwLabel.textContent = 'normaal';
+  else hwLabel.textContent = 'zwaar';
+};
+
+// Lucht toggle
+const luchtToggle = document.getElementById('luchtToggle');
+const luchtLabel = document.getElementById('luchtLabel');
+luchtToggle.onclick = () => {
+  if (sim.running) return;
+  settings.lucht = !settings.lucht;
+  luchtToggle.classList.toggle('on', settings.lucht);
+  luchtLabel.textContent = settings.lucht ? 'AAN — luchtdeeltjes aanwezig' : 'UIT — vacuüm';
+  if (settings.lucht) initAirParticles();
+};
+
+// Start / Reset buttons
+const btnRow = document.getElementById('btnRow');
+const startBtn = document.getElementById('startBtn');
+
+startBtn.onclick = () => {
+  if (sim.running) return;
+  resetSim();
+  sim.running = true;
+  sim.handOpen = true;
+  prevVeerLanded = false;
+  prevHamerLanded = false;
+  showStopBtn();
+  setControlsLocked(true);
+};
+
+function showStopBtn() {
+  btnRow.innerHTML = '<button class="btn btn-reset" id="stopBtn">⏹ Stop</button>';
+  document.getElementById('stopBtn').onclick = () => {
+    sim.running = false;
+    showResetBtn();
+  };
+}
+
+function showResetBtn() {
+  btnRow.innerHTML = '<button class="btn btn-reset" id="resetBtn">↺ Reset</button>';
+  document.getElementById('resetBtn').onclick = () => {
+    resetSim();
+    showStartBtn();
+    setControlsLocked(false);
+  };
+}
+
+function showStartBtn() {
+  btnRow.innerHTML = '<button class="btn btn-start" id="startBtn2">▶ Start</button>';
+  document.getElementById('startBtn2').onclick = startBtn.onclick;
+}
+
+function resetSim() {
+  sim.running = false;
+  sim.handOpen = false;
+  sim.veer = { y: 0, vy: 0, landed: false };
+  sim.hamer = { y: 0, vy: 0, landed: false };
+  sim.time = 0;
+  impacts = [];
+}
+
+function setControlsLocked(locked) {
+  vgSlider.disabled = locked;
+  vwSlider.disabled = locked;
+  hwSlider.disabled = locked;
+  luchtToggle.style.pointerEvents = locked ? 'none' : '';
+  luchtToggle.style.opacity = locked ? '0.5' : '1';
+  gravGrid.querySelectorAll('.grav-btn').forEach(b => b.disabled = locked);
+}
+
+// ── HELPER ──
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ── INIT ──
+initStars();
+initAirParticles();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
