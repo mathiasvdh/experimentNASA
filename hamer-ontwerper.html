@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamer Ontwerper</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 2em;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: #aaa;
+    margin-bottom: 18px;
+    font-size: 0.95em;
+  }
+
+  .app {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 900px;
+    width: 100%;
+  }
+
+  /* === PREVIEW === */
+  .preview {
+    background: #16213e;
+    border-radius: 18px;
+    border: 3px solid #0f3460;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 320px;
+    flex: 1;
+  }
+
+  .preview h2 { margin-bottom: 12px; font-size: 1.1em; color: #e94560; }
+
+  svg#hamer {
+    width: 280px;
+    height: 340px;
+    filter: drop-shadow(4px 8px 6px rgba(0,0,0,0.5));
+    transition: transform 0.3s;
+  }
+
+  svg#hamer:hover { transform: rotate(-8deg) scale(1.05); }
+
+  .naam-label {
+    margin-top: 12px;
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #e94560;
+    min-height: 1.5em;
+    text-align: center;
+  }
+
+  /* === CONTROLS === */
+  .controls {
+    background: #16213e;
+    border-radius: 18px;
+    border: 3px solid #0f3460;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 280px;
+    flex: 1;
+    max-width: 420px;
+  }
+
+  .controls h2 { margin-bottom: 2px; font-size: 1.1em; color: #e94560; }
+
+  .control-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 0.95em;
+  }
+
+  .control-group { position: relative; }
+
+  /* Kleurknoppen */
+  .color-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .color-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+
+  .color-btn:hover { transform: scale(1.15); }
+  .color-btn.active { border-color: #fff; transform: scale(1.15); }
+
+  /* Vorm knoppen */
+  .shape-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .shape-btn {
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: 2px solid #0f3460;
+    background: #1a1a2e;
+    color: #eee;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .shape-btn:hover { background: #0f3460; }
+  .shape-btn.active { background: #e94560; border-color: #e94560; }
+
+  /* Slider */
+  input[type=range] {
+    width: 100%;
+    accent-color: #e94560;
+    height: 22px;
+    cursor: pointer;
+  }
+
+  /* Tekstveld */
+  input[type=text] {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 2px solid #0f3460;
+    background: #1a1a2e;
+    color: #eee;
+    font-size: 1em;
+  }
+
+  input[type=text]:focus { outline: none; border-color: #e94560; }
+
+  /* Checkbox rij */
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+  }
+
+  .check-row input { width: 18px; height: 18px; accent-color: #e94560; cursor: pointer; }
+
+  /* Aambeeld animatie */
+  .smeed-area {
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  .smeed-btn {
+    padding: 12px 28px;
+    border-radius: 14px;
+    border: none;
+    background: #e94560;
+    color: #fff;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .smeed-btn:hover { background: #c73650; }
+  .smeed-btn:active { transform: scale(0.95); }
+
+  .vonken {
+    height: 30px;
+    font-size: 1.4em;
+    margin-top: 4px;
+  }
+
+  /* Responsive */
+  @media (max-width: 680px) {
+    .app { flex-direction: column; align-items: center; }
+    .controls { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>&#9881; Hamer Ontwerper</h1>
+<p class="subtitle">Pas je hamer aan en bekijk het resultaat!</p>
+
+<div class="app">
+
+  <!-- PREVIEW -->
+  <div class="preview">
+    <h2>Jouw hamer</h2>
+    <svg id="hamer" viewBox="0 0 280 340">
+      <!-- Steel (handvat) -->
+      <rect id="steel" x="125" y="130" width="30" height="190" rx="6"
+            fill="#b5651d" stroke="#7a3b10" stroke-width="2"/>
+      <!-- Wikkel -->
+      <g id="wikkel-groep"></g>
+      <!-- Hamerkop -->
+      <g id="kop-groep">
+        <rect id="kop" x="50" y="40" width="180" height="80" rx="16"
+              fill="#888" stroke="#555" stroke-width="3"/>
+      </g>
+      <!-- Glans -->
+      <ellipse id="glans" cx="140" cy="65" rx="60" ry="12"
+               fill="rgba(255,255,255,0.15)"/>
+      <!-- Ogen (cartoon) -->
+      <g id="gezicht">
+        <ellipse cx="115" cy="75" rx="8" ry="10" fill="#fff"/>
+        <ellipse cx="115" cy="77" rx="4" ry="5" fill="#222"/>
+        <ellipse cx="165" cy="75" rx="8" ry="10" fill="#fff"/>
+        <ellipse cx="165" cy="77" rx="4" ry="5" fill="#222"/>
+        <path id="mond" d="M125 95 Q140 108 155 95" fill="none"
+              stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <!-- Patroon op kop -->
+      <g id="patroon-groep"></g>
+    </svg>
+    <div class="naam-label" id="naam-display">Mijn Hamer</div>
+
+    <div class="smeed-area">
+      <button class="smeed-btn" onclick="smeed()">&#128296; Smeed!</button>
+      <div class="vonken" id="vonken"></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <h2>&#127912; Aanpassingen</h2>
+
+    <div class="control-group">
+      <label>Kleur hamerkop</label>
+      <div class="color-options" id="kop-kleuren"></div>
+    </div>
+
+    <div class="control-group">
+      <label>Kleur handvat</label>
+      <div class="color-options" id="steel-kleuren"></div>
+    </div>
+
+    <div class="control-group">
+      <label>Vorm hamerkop</label>
+      <div class="shape-options" id="vorm-opties"></div>
+    </div>
+
+    <div class="control-group">
+      <label>Grootte: <span id="grootte-label">normaal</span></label>
+      <input type="range" id="grootte" min="0" max="2" value="1" step="1">
+    </div>
+
+    <div class="control-group">
+      <label>Patroon op de kop</label>
+      <div class="shape-options" id="patroon-opties"></div>
+    </div>
+
+    <div class="control-group check-row" onclick="toggleGezicht()">
+      <input type="checkbox" id="gezicht-aan" checked>
+      <label for="gezicht-aan">Gezichtje tonen</label>
+    </div>
+
+    <div class="control-group check-row" onclick="toggleWikkel()">
+      <input type="checkbox" id="wikkel-aan">
+      <label for="wikkel-aan">Wikkel om handvat</label>
+    </div>
+
+    <div class="control-group">
+      <label>Naam van je hamer</label>
+      <input type="text" id="naam-input" maxlength="24"
+             placeholder="Geef je hamer een naam..." value="Mijn Hamer"
+             oninput="updateNaam()">
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── DATA ──
+  const kopKleuren = [
+    {naam:'Zilver',  kleur:'#aaa'},
+    {naam:'Goud',    kleur:'#f0c040'},
+    {naam:'Brons',   kleur:'#cd7f32'},
+    {naam:'Blauw',   kleur:'#4a90d9'},
+    {naam:'Rood',    kleur:'#d94040'},
+    {naam:'Groen',   kleur:'#3daa5e'},
+    {naam:'Paars',   kleur:'#9b59b6'},
+    {naam:'Zwart',   kleur:'#333'},
+  ];
+
+  const steelKleuren = [
+    {naam:'Hout',       kleur:'#b5651d'},
+    {naam:'DonkerHout', kleur:'#6b3a1f'},
+    {naam:'Licht',      kleur:'#d4a056'},
+    {naam:'Rood',       kleur:'#c0392b'},
+    {naam:'Blauw',      kleur:'#2e86c1'},
+    {naam:'Zwart',      kleur:'#2c2c2c'},
+  ];
+
+  const vormen = ['Rechthoek','Rond','Kruis'];
+  const patronen = ['Geen','Sterren','Strepen','Bliksem'];
+  const grootteLabels = ['klein','normaal','groot'];
+  const grootteSchaal = [0.75, 1, 1.25];
+
+  // ── STATE ──
+  let state = {
+    kopKleur: '#aaa',
+    steelKleur: '#b5651d',
+    vorm: 'Rechthoek',
+    grootte: 1,
+    patroon: 'Geen',
+    gezicht: true,
+    wikkel: false,
+  };
+
+  // ── HELPERS ──
+  const $ = id => document.getElementById(id);
+
+  function maakKleurKnoppen(containerId, lijst, actief, callback) {
+    const c = $(containerId);
+    c.innerHTML = '';
+    lijst.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'color-btn' + (item.kleur === actief ? ' active' : '');
+      btn.style.background = item.kleur;
+      btn.title = item.naam;
+      btn.onclick = () => callback(item.kleur);
+      c.appendChild(btn);
+    });
+  }
+
+  function maakVormKnoppen(containerId, lijst, actief, callback) {
+    const c = $(containerId);
+    c.innerHTML = '';
+    lijst.forEach(v => {
+      const btn = document.createElement('button');
+      btn.className = 'shape-btn' + (v === actief ? ' active' : '');
+      btn.textContent = v;
+      btn.onclick = () => callback(v);
+      c.appendChild(btn);
+    });
+  }
+
+  // ── RENDER ──
+  function render() {
+    // Kleurknoppen
+    maakKleurKnoppen('kop-kleuren', kopKleuren, state.kopKleur, k => { state.kopKleur = k; render(); });
+    maakKleurKnoppen('steel-kleuren', steelKleuren, state.steelKleur, k => { state.steelKleur = k; render(); });
+    maakVormKnoppen('vorm-opties', vormen, state.vorm, v => { state.vorm = v; render(); });
+    maakVormKnoppen('patroon-opties', patronen, state.patroon, p => { state.patroon = p; render(); });
+
+    // Grootte
+    const gi = $('grootte');
+    state.grootte = parseInt(gi.value);
+    $('grootte-label').textContent = grootteLabels[state.grootte];
+    const schaal = grootteSchaal[state.grootte];
+
+    // Hamerkop
+    const kopGroep = $('kop-groep');
+    const glans = $('glans');
+    kopGroep.innerHTML = '';
+
+    const kopB = 180 * schaal;
+    const kopH = 80 * schaal;
+    const kopX = 140 - kopB / 2;
+    const kopY = 80 - kopH / 2;
+
+    if (state.vorm === 'Rechthoek') {
+      kopGroep.innerHTML = `<rect x="${kopX}" y="${kopY}" width="${kopB}" height="${kopH}"
+        rx="16" fill="${state.kopKleur}" stroke="#555" stroke-width="3"/>`;
+    } else if (state.vorm === 'Rond') {
+      kopGroep.innerHTML = `<ellipse cx="140" cy="80" rx="${kopB/2}" ry="${kopH/2}"
+        fill="${state.kopKleur}" stroke="#555" stroke-width="3"/>`;
+    } else {
+      // Kruis = T-vorm
+      const hw = kopB * 0.28;
+      kopGroep.innerHTML = `
+        <rect x="${kopX}" y="${kopY}" width="${kopB}" height="${kopH}"
+          rx="14" fill="${state.kopKleur}" stroke="#555" stroke-width="3"/>
+        <rect x="${140-hw/2}" y="${kopY - kopH*0.4}" width="${hw}" height="${kopH*0.45}"
+          rx="8" fill="${state.kopKleur}" stroke="#555" stroke-width="3"/>`;
+    }
+
+    // Glans
+    glans.setAttribute('cx', 140);
+    glans.setAttribute('cy', kopY + kopH * 0.3);
+    glans.setAttribute('rx', kopB * 0.33);
+    glans.setAttribute('ry', kopH * 0.15);
+
+    // Steel
+    const steel = $('steel');
+    steel.setAttribute('fill', state.steelKleur);
+    const donkerder = dimColor(state.steelKleur, 0.6);
+    steel.setAttribute('stroke', donkerder);
+
+    // Gezicht
+    const gezicht = $('gezicht');
+    gezicht.style.display = state.gezicht ? '' : 'none';
+    if (state.gezicht) {
+      const cy = kopY + kopH * 0.45;
+      const mouthY = kopY + kopH * 0.7;
+      gezicht.innerHTML = `
+        <ellipse cx="${140-25*schaal}" cy="${cy}" rx="${8*schaal}" ry="${10*schaal}" fill="#fff"/>
+        <ellipse cx="${140-25*schaal}" cy="${cy+2*schaal}" rx="${4*schaal}" ry="${5*schaal}" fill="#222"/>
+        <ellipse cx="${140+25*schaal}" cy="${cy}" rx="${8*schaal}" ry="${10*schaal}" fill="#fff"/>
+        <ellipse cx="${140+25*schaal}" cy="${cy+2*schaal}" rx="${4*schaal}" ry="${5*schaal}" fill="#222"/>
+        <path d="M${140-15*schaal} ${mouthY} Q140 ${mouthY+13*schaal} ${140+15*schaal} ${mouthY}"
+          fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
+    }
+
+    // Patroon
+    const pg = $('patroon-groep');
+    pg.innerHTML = '';
+    if (state.patroon === 'Sterren') {
+      for (let i = 0; i < 3; i++) {
+        const sx = kopX + 30 + i * (kopB - 60) / 2;
+        const sy = kopY + 14;
+        pg.innerHTML += `<text x="${sx}" y="${sy}" font-size="${16*schaal}" fill="rgba(255,255,255,0.5)" text-anchor="middle">&#9733;</text>`;
+      }
+    } else if (state.patroon === 'Strepen') {
+      for (let i = 0; i < 4; i++) {
+        const lx = kopX + 25 + i * (kopB - 50) / 3;
+        pg.innerHTML += `<line x1="${lx}" y1="${kopY+8}" x2="${lx}" y2="${kopY+kopH-8}"
+          stroke="rgba(255,255,255,0.25)" stroke-width="3" stroke-linecap="round"/>`;
+      }
+    } else if (state.patroon === 'Bliksem') {
+      const bx = 140, by = kopY + 10;
+      const s = schaal * 0.9;
+      pg.innerHTML += `<polygon points="${bx-8*s},${by} ${bx+4*s},${by+15*s} ${bx-2*s},${by+15*s} ${bx+8*s},${by+35*s} ${bx-1*s},${by+20*s} ${bx+3*s},${by+20*s}"
+        fill="rgba(255,255,0,0.5)"/>`;
+    }
+
+    // Wikkel
+    const wg = $('wikkel-groep');
+    wg.innerHTML = '';
+    if (state.wikkel) {
+      for (let i = 0; i < 5; i++) {
+        const wy = 160 + i * 32;
+        wg.innerHTML += `<line x1="122" y1="${wy}" x2="158" y2="${wy+18}"
+          stroke="rgba(255,255,255,0.35)" stroke-width="5" stroke-linecap="round"/>`;
+      }
+    }
+
+    $('gezicht-aan').checked = state.gezicht;
+    $('wikkel-aan').checked = state.wikkel;
+  }
+
+  function dimColor(hex, factor) {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgb(${Math.round(r*factor)},${Math.round(g*factor)},${Math.round(b*factor)})`;
+  }
+
+  function toggleGezicht() {
+    state.gezicht = !state.gezicht;
+    render();
+  }
+
+  function toggleWikkel() {
+    state.wikkel = !state.wikkel;
+    render();
+  }
+
+  function updateNaam() {
+    $('naam-display').textContent = $('naam-input').value || '\u00A0';
+  }
+
+  // Smeed-animatie
+  function smeed() {
+    const svg = $('hamer');
+    svg.style.transition = 'transform 0.08s';
+    svg.style.transform = 'rotate(15deg) translateY(-10px)';
+    $('vonken').textContent = '✨🔥✨';
+
+    setTimeout(() => {
+      svg.style.transform = 'rotate(-5deg) translateY(5px)';
+      setTimeout(() => {
+        svg.style.transition = 'transform 0.3s';
+        svg.style.transform = '';
+        setTimeout(() => { $('vonken').textContent = ''; }, 600);
+      }, 100);
+    }, 120);
+  }
+
+  // Grootte slider event
+  $('grootte').addEventListener('input', () => render());
+
+  // Start
+  render();
+</script>
+
+</body>
+</html>
